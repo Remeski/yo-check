@@ -8,20 +8,20 @@ import requests
 base_url = "https://www.ylioppilastutkinto.fi/fi/tutkinnon-suorittaminen/pisterajat/pisterajat-" 
 
 aine_dict = {
-  "MAA": "Matematiikka, pitkä oppimäärä",
-  "MAB":"Matematiikka, lyhyt oppimäärä",
-  "FY": "Fysiikka",
-  "KE": "Kemia",
-  "BI": "Biologia",
-  "TE": "Terveystieto",
-  "MA": "Maantiede",
-  "YH": "Yhteiskuntaoppi",
-  "HI": "Historia",
-  "PS": "Psykologia",
-  "FI": "Filosofia",
-  "US": "Uskonto",
-  "EN": "Englanti, pitkä oppimäärä",
-  "RU": "Ruotsi, keskipitkä oppimäärä" 
+  "MAA": ["Matematiikka, pitkä oppimäärä", "Matematiikan koe, lyhyt oppimäärä"],
+  "MAB": ["Matematiikka, lyhyt oppimäärä", "Matematiikan koe, pitkä oppimäärä"],
+  "FY": ["Fysiikka"],
+  "KE": ["Kemia"],
+  "BI": ["Biologia"],
+  "TE": ["Terveystieto"],
+  "MA": ["Maantiede"],
+  "YH": ["Yhteiskuntaoppi"],
+  "HI": ["Historia"],
+  "PS": ["Psykologia"],
+  "FI": ["Filosofia"],
+  "US": ["Uskonto"],
+  "EN": ["Englanti, pitkä oppimäärä"],
+  "RU": ["Ruotsi, keskipitkä oppimäärä"] 
 }
 
 arvosana_map = {
@@ -43,8 +43,8 @@ parser = argparse.ArgumentParser(prog='yo-raja-check', description='Laskea cool 
 vuodet = []
 
 parser.add_argument('-v', '--vuodet', help="Format: (VUOSILUKU(K | S),...) , esim. 2024S,2024K", required=True)
-parser.add_argument('-a', '--aine', required=True)
-parser.add_argument('arvosana', help="Mitä sä haluut??")
+parser.add_argument('-a', '--aine', action="append", required=True)
+parser.add_argument('arvosanat', help="Mitä sä haluut??")
 
 args = parser.parse_args()
 
@@ -69,7 +69,17 @@ def parse_vuodet():
   vuodet = [ x.strip() for x in vuodet_string.split(",") ]
   search_paths = [ convert_to_path(x) for x in vuodet ]
 
-def get_piste_raja(url: str):
+def find_arvosanat(pisteet: dict[str, list[str]], aine: str) -> list[str]:
+  names_in_obj = aine_dict[aine]
+  for name in names_in_obj:
+    try: 
+      arvosanat = pisteet[name]
+      return arvosanat
+    except KeyError:
+      continue
+  return ["0"]
+
+def get_piste_raja(url: str, arvosana: str, aine: str):
   data = requests.get(url)
   html = data.text
   start_index = html.rfind("<tbody>")
@@ -82,21 +92,24 @@ def get_piste_raja(url: str):
   for col in table_cols:
     # print(col[0].replace("<span>", "").replace("</span>", ""))
     obj[col[0].replace("<span>", "").replace("</span>", "")] = [ x.replace("</td>", "").replace("<span>", "").replace("</span>", "") for x in col[1:] ]
+  
+  return int(find_arvosanat(obj, aine)[arvosana_map[arvosana]])
+  # return int(obj[name_in_obj][arvosana_map[args.arvosana]])
 
-  name_in_obj = aine_dict[args.aine]
-  return int(obj[name_in_obj][arvosana_map[args.arvosana]])
+def pisterajat(arvosana, aine): 
+  piste_rajat = [ get_piste_raja(x, arvosana, aine) for x in search_urls ] 
+  keskiarvo = functools.reduce(lambda a, b: a+b, piste_rajat) / len(piste_rajat)
+
+  print(f"\t{arvosana}:n pisterajat:")
+  for i, raja in enumerate(piste_rajat):
+    print(f"\t\t{vuodet[i]}: {raja}")
+  print(f"\t\tKeskiarvo: {round(keskiarvo,1)}")
 
 
 parse_vuodet()
-
 search_urls = [ base_url + x for x in search_paths ]
 
-piste_rajat = [ get_piste_raja(x) for x in search_urls ] 
-
-keskiarvo = functools.reduce(lambda a, b: a+b, piste_rajat) / len(piste_rajat)
-
-print(f"{aine_dict[args.aine]}")
-print("\tPisterajat:")
-for i, raja in enumerate(piste_rajat):
-  print(f"\t\t{vuodet[i]}: {raja}")
-print(f"\tKeskiarvo on: {keskiarvo}")
+for aine in args.aine:
+  print(f"{aine_dict[aine][0]}")
+  for arvosana in args.arvosanat.split(","):
+    pisterajat(arvosana, aine)
