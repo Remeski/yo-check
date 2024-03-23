@@ -10,6 +10,7 @@ base_url = "https://www.ylioppilastutkinto.fi/fi/tutkinnon-suorittaminen/pistera
 aine_dict = {
   "MAA": ["Matematiikka, pitkä oppimäärä", "Matematiikan koe, lyhyt oppimäärä"],
   "MAB": ["Matematiikka, lyhyt oppimäärä", "Matematiikan koe, pitkä oppimäärä"],
+  "AI": ["Äidinkieli ja kirjallisuus, suomi", "Äidinkieli, suomi", "äidinkielen koe, suomi"],
   "FY": ["Fysiikka"],
   "KE": ["Kemia"],
   "BI": ["Biologia"],
@@ -38,15 +39,7 @@ arvosana_map = {
 
 search_paths = []
 
-parser = argparse.ArgumentParser(prog='yo-raja-check', description='Laskea cool things about yo pisterajat!')
-
 vuodet = []
-
-parser.add_argument('-v', '--vuodet', help="Format: (VUOSILUKU(K | S),...) , esim. 2024S,2024K", required=True)
-parser.add_argument('-a', '--aine', action="append", required=True)
-parser.add_argument('arvosanat', help="Mitä sä haluut??")
-
-args = parser.parse_args()
 
 def convert_to_path(vuosi_string: str):
   vuosi = vuosi_string[:4]
@@ -62,12 +55,8 @@ def convert_to_path(vuosi_string: str):
   path += "-" + vuosi
   return path
 
-def parse_vuodet():
-  global search_paths
-  global vuodet
-  vuodet_string = args.vuodet
-  vuodet = [ x.strip() for x in vuodet_string.split(",") ]
-  search_paths = [ convert_to_path(x) for x in vuodet ]
+def vuodet_to_paths(vuodet: list[str]) -> list[str]:
+  return [ convert_to_path(x) for x in vuodet ]
 
 def find_arvosanat(pisteet: dict[str, list[str]], aine: str) -> list[str]:
   names_in_obj = aine_dict[aine]
@@ -90,26 +79,20 @@ def get_piste_raja(url: str, arvosana: str, aine: str):
 
   obj = {}
   for col in table_cols:
-    # print(col[0].replace("<span>", "").replace("</span>", ""))
     obj[col[0].replace("<span>", "").replace("</span>", "")] = [ x.replace("</td>", "").replace("<span>", "").replace("</span>", "") for x in col[1:] ]
   
   return int(find_arvosanat(obj, aine)[arvosana_map[arvosana]])
-  # return int(obj[name_in_obj][arvosana_map[args.arvosana]])
 
-def pisterajat(arvosana, aine): 
+def pisterajat(arvosana: str, aine: str, vuodet: list[str]) -> dict: 
+  search_urls = [ base_url + x for x in vuodet_to_paths(vuodet) ]
   piste_rajat = [ get_piste_raja(x, arvosana, aine) for x in search_urls ] 
   keskiarvo = functools.reduce(lambda a, b: a+b, piste_rajat) / len(piste_rajat)
 
-  print(f"\t{arvosana}:n pisterajat:")
+  obj = {}
+  obj["raw"] = {}
   for i, raja in enumerate(piste_rajat):
-    print(f"\t\t{vuodet[i]}: {raja}")
-  print(f"\t\tKeskiarvo: {round(keskiarvo,1)}")
+    obj["raw"][vuodet[i]] = raja
 
+  obj["mean"] = round(keskiarvo, 1)
+  return obj
 
-parse_vuodet()
-search_urls = [ base_url + x for x in search_paths ]
-
-for aine in args.aine:
-  print(f"{aine_dict[aine][0]}")
-  for arvosana in args.arvosanat.split(","):
-    pisterajat(arvosana, aine)
