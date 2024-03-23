@@ -17,8 +17,8 @@ class TestParsing(unittest.TestCase):
 
   def test_calculate_relative_scores(self):
     input = {'millainen': {1: 98, 2: 369, 3: 349, 4: 70, 5: 45}, 'arvosanani': {1: 81, 2: 114, 3: 207, 4: 207, 5: 81, 6: 48, 7: 36, 8: 62}, 'fiilis': {1: 60, 2: 195, 3: 402, 4: 118, 5: 31}, 'valmistautuminen': {1: 158, 2: 251, 3: 149, 4: 77, 5: 76}} 
-    assertion = {'millainen': {1: 0.11, 2: 0.4, 3: 0.37, 4: 0.08, 5: 0.05}, 'arvosanani': {1: 0.1, 2: 0.14, 3: 0.25, 4: 0.25, 5: 0.1, 6: 0.06, 7: 0.04, 8: 0.07}, 'fiilis': {1: 0.07, 2: 0.24, 3: 0.5, 4: 0.15, 5: 0.04}, 'valmistautuminen': {1: 0.22, 2: 0.35, 3: 0.21, 4: 0.11, 5: 0.11}}
     relative = abitreenit.calculate_relative_scores(input)
+    assertion = {'millainen': {1: 0.105, 2: 0.396, 3: 0.375, 4: 0.075, 5: 0.048}, 'arvosanani': {1: 0.097, 2: 0.136, 3: 0.248, 4: 0.248, 5: 0.097, 6: 0.057, 7: 0.043, 8: 0.074}, 'fiilis': {1: 0.074, 2: 0.242, 3: 0.499, 4: 0.146, 5: 0.038}, 'valmistautuminen': {1: 0.222, 2: 0.353, 3: 0.21, 4: 0.108, 5: 0.107}}
     self.assertEqual(assertion, relative)
 
 class TestPolls(unittest.TestCase):

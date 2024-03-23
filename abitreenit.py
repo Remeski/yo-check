@@ -151,7 +151,13 @@ def calculate_relative_scores(parsed_questions: dict):
     for ans in answers.values():
       sum += ans
     for ans in answers:
-      q_obj[ans] = round(answers[ans]/sum, 2) 
+      q_obj[ans] = round(answers[ans]/sum, 3) 
     obj[q] = q_obj
   return obj
 
+def poll_scores(aine: str, vuosi:str, relative=True, minimal=False):
+  polls = get_polls(aine, vuosi)
+  q = parse_questions(polls, minimal=minimal)
+  if relative:
+    q = calculate_relative_scores(q)
+  return q

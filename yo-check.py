@@ -1,4 +1,4 @@
-import pisterajat
+from ytl import pisterajat
 import argparse
 
 parser = argparse.ArgumentParser(prog='yo-raja-check', description='Laskea cool things about yo pisterajat!')
@@ -17,7 +17,7 @@ vuodet = parse_vuodet_string(args.vuodet)
 for aine in args.aine:
   print(f"{pisterajat.aine_dict[aine][0]}")
   for arvosana in args.arvosanat.split(","):
-    p = pisterajat.pisterajat(arvosana, aine, vuodet)
+    p = pisterajat.pisterajat(aine, vuodet, arvosana)
     print(f"\t{arvosana}:n pisterajat")
 
     for v in p["raw"].keys():

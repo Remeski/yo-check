@@ -80,7 +80,7 @@ def get_piste_raja(url: str, arvosana: str, aine: str):
   
   return int(find_arvosanat(obj, aine)[arvosana_map[arvosana]])
 
-def pisterajat(arvosana: str, aine: str, vuodet: list[str]) -> dict: 
+def pisterajat(aine: str, vuodet: list[str], arvosana: str) -> dict: 
   search_urls = [ base_url + x for x in vuodet_to_paths(vuodet) ]
   piste_rajat = [ get_piste_raja(x, arvosana, aine) for x in search_urls ] 
   keskiarvo = functools.reduce(lambda a, b: a+b, piste_rajat) / len(piste_rajat)
