@@ -140,7 +140,18 @@ def parse_questions(polls: dict, minimal=False):
       obj[q_name] = dict((i + 1, v) for (i, v) in enumerate(polls[q].values())) 
     else:
       obj[q_name] = dict((k.lower(), v) for (k, v) in polls[q].items()) 
-  print(obj)
+  return obj
 
-# def calculate_relative_scores(polls: dict):
+def calculate_relative_scores(parsed_questions: dict):
+  obj = {}
+  for q in parsed_questions:
+    q_obj = {}
+    answers = parsed_questions[q]
+    sum = 0
+    for ans in answers.values():
+      sum += ans
+    for ans in answers:
+      q_obj[ans] = round(answers[ans]/sum, 2) 
+    obj[q] = q_obj
+  return obj
 
