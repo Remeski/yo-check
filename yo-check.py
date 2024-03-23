@@ -1,5 +1,4 @@
 import pisterajat
-import abitreenit
 import argparse
 
 parser = argparse.ArgumentParser(prog='yo-raja-check', description='Laskea cool things about yo pisterajat!')
@@ -16,7 +15,12 @@ def parse_vuodet_string(vuodet_string: str):
 vuodet = parse_vuodet_string(args.vuodet)
 
 for aine in args.aine:
-  abitreenit.get_polls(aine, vuodet[0])
-  # print(f"{pisterajat.aine_dict[aine][0]}")
-  # for arvosana in args.arvosanat.split(","):
-  #   print(pisterajat.pisterajat(arvosana, aine, vuodet))
+  print(f"{pisterajat.aine_dict[aine][0]}")
+  for arvosana in args.arvosanat.split(","):
+    p = pisterajat.pisterajat(arvosana, aine, vuodet)
+    print(f"\t{arvosana}:n pisterajat")
+
+    for v in p["raw"].keys():
+      print(f"\t\t{v}: {p['raw'][v]}")
+
+    print(f"\tKeskiarvo: {p['mean']}")

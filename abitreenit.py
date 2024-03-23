@@ -40,6 +40,14 @@ aine_koe_dict = {
   "EN": "englanti",
   "RU": "ruotsi" 
 }
+
+question_keywords = {
+  "millainen": ["millainen", "mielestäsi"],
+  "fiilis": ["fiilis"],
+  "arvosanani": ["uskon", "arvosanakseni"],
+  "valmistautuminen": ["valmistautunut"]
+}
+
 def find_href_of_a(body: str, search_string: str):
   index = body.rfind(search_string) 
   start_index = 0
@@ -106,4 +114,33 @@ def get_polls(aine: str, vuosi: str):
   exam_uuid = get_possible_exam_uuids(koesivu_url)
   exams_json = get_exams_json(exam_uuid)
   return parse_exams(exams_json)
+
+def calculate_kokelaat(polls: dict):
+  max_kokelaat = 0
+  for q in polls:
+    temp = 0
+    for ans in polls[q].values():
+      temp += ans
+    if temp > max_kokelaat:
+      max_kokelaat = temp
+  return max_kokelaat
+
+def parse_questions(polls: dict, minimal=False):
+  obj = {}
+  for q in polls:
+    q_name_actual: str = q.strip()
+    q_name = "error"
+    for qk in question_keywords:
+      kws = question_keywords[qk]
+      for kw in kws:
+        if q_name_actual.lower().__contains__(kw):
+          q_name = qk 
+          break
+    if minimal:
+      obj[q_name] = dict((i + 1, v) for (i, v) in enumerate(polls[q].values())) 
+    else:
+      obj[q_name] = dict((k.lower(), v) for (k, v) in polls[q].items()) 
+  print(obj)
+
+# def calculate_relative_scores(polls: dict):
 
