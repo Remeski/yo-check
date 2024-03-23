@@ -1,7 +1,9 @@
 import re
 import requests
 
-base_url = "https://yle.fi/aihe/abitreenit/" 
+base_url = "https://yle.fi/aihe/abitreenit/"
+exams_url = "https://tehtava.api.yle.fi/v1/public/exams.json?uuid="
+answers_url = "https://tehtava.api.yle.fi/v1/public/polls?question_uuids="
 
 aine_dict = {
   "MAA": "matematiikka",
@@ -66,7 +68,42 @@ def get_url(aine: str, vuosi: str):
   kaikki_kokeet = requests.get(kaikki_kokeet_url).text
   return find_href_of_a(kaikki_kokeet, aine_vuosi_to_search_string(aine, vuosi))
 
+def get_possible_exam_uuids(url: str):
+  data = requests.get(url).text
+  uuids = re.findall(r"<div.*(?:data-ydd-tehtava-exam-id|data-exam-id)=.\d\d-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}).", data)
+  return uuids
+
+def get_exams_json(possible_uuids: list[str]):
+  for uuid in possible_uuids: 
+    url = exams_url + uuid
+    exams = requests.get(url).json()["data"][0]
+    if exams["exam_type"] != "poll":
+      continue
+    return exams["questions"]
+  return None
+
+def get_question_answers(question_uuid: str):
+  url = answers_url + question_uuid
+  answers = requests.get(url).json()["data"]
+  obj = {}
+  for answer in answers:
+    obj[answer["option_id"]] = answer["count_option"]
+  return obj
+
+def parse_exams(questions):
+  obj = {}
+  for q in questions:
+    q_uuid = q["uuid"]
+    q_answers = get_question_answers(q_uuid)
+    q_obj = {}
+    for option in q["options"]:
+      q_obj[option["text"]] = q_answers[str(option["id"])]
+    obj[q["main_text"]] = q_obj
+  return obj
 
 def get_polls(aine: str, vuosi: str):
-  return get_url(aine, vuosi)
+  koesivu_url = get_url(aine, vuosi)
+  exam_uuid = get_possible_exam_uuids(koesivu_url)
+  exams_json = get_exams_json(exam_uuid)
+  return parse_exams(exams_json)
 

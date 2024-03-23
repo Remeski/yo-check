@@ -16,7 +16,7 @@ def parse_vuodet_string(vuodet_string: str):
 vuodet = parse_vuodet_string(args.vuodet)
 
 for aine in args.aine:
-  print(abitreenit.get_polls(aine, vuodet[0]))
-  print(f"{pisterajat.aine_dict[aine][0]}")
-  for arvosana in args.arvosanat.split(","):
-    print(pisterajat.pisterajat(arvosana, aine, vuodet))
+  abitreenit.get_polls(aine, vuodet[0])
+  # print(f"{pisterajat.aine_dict[aine][0]}")
+  # for arvosana in args.arvosanat.split(","):
+  #   print(pisterajat.pisterajat(arvosana, aine, vuodet))
