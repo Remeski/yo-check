@@ -1,3 +1,91 @@
-trainging_data = ([[0.177, 0.221, 0.337, 0.186, 0.078, 0.205, 0.259, 0.335, 0.105, 0.096, 0.246, 0.184, 0.197, 0.132, 0.059, 0.045, 0.039, 0.097, 0.28, 0.219, 0.16, 0.128, 0.212], [0.32, 0.348, 0.137, 0.112, 0.083, 0.079, 0.126, 0.21, 0.207, 0.127, 0.084, 0.097, 0.069, 0.08, 0.127, 0.412, 0.337, 0.044, 0.059, 0.128, 0.307, 0.472, 0.034], [0.114, 0.179, 0.294, 0.187, 0.075, 0.04, 0.111, 0.188, 0.201, 0.329, 0.198, 0.084, 0.284, 0.256, 0.155, 0.138, 0.167, 0.156, 0.211, 0.328, 0.235, 0.07, 0.238, 0.165, 0.213, 0.129, 0.069, 0.049, 0.053, 0.083], [0.13, 0.177, 0.229, 0.188, 0.098, 0.057, 0.059, 0.061, 0.092, 0.228, 0.377, 0.268, 0.035, 0.321, 0.329, 0.143, 0.116, 0.091, 0.107, 0.259, 0.409, 0.178, 0.048], [0.236, 0.177, 0.193, 0.127, 0.062, 0.042, 0.068, 0.095, 0.127, 0.161, 0.383, 0.167, 0.108, 0.054, 0.292, 0.231, 0.147, 0.146, 0.184, 0.15, 0.211, 0.26, 0.165, 0.131, 0.082], [0.546, 0.297, 0.076, 0.018, 0.027, 0.035, 0.377, 0.331, 0.109, 0.1, 0.083, 0.084, 0.103, 0.155, 0.18, 0.12, 0.086, 0.159, 0.113, 0.38, 0.318, 0.191, 0.044, 0.035, 0.032], [0.236, 0.177, 0.193, 0.127, 0.062, 0.042, 0.068, 0.095, 0.127, 0.161, 0.383, 0.167, 0.108, 0.054, 0.292, 0.231, 0.147, 0.146, 0.184, 0.15, 0.211, 0.26, 0.165, 0.131, 0.082]], [90, 81, 95, 93, 99, 82, 99])
+import numpy as np
+
+np.random.seed(0)
+
+class Layer:
+  def __init__(self, n_input, m_output, activation=None, weights=None, biases=None):
+
+    if activation:
+      self.activation = activation
+    else:
+      self.activation = lambda x : x
+
+    if (weights is not None) and (np.array(weights).shape != (n_input, m_output)):
+      self.weights = weights
+    else:
+      self.weights = np.random.random((n_input, m_output))
+
+    if (biases is not None) and (np.array(biases).shape != (1, m_output)):
+      self.biases = np.random.random((1, m_output))
+    else:
+      self.biases = np.random.random((1,m_output))
+
+  def forward(self, input):
+    Z = np.dot(np.array(input), np.array(self.weights)) + np.array(self.biases) 
+    self.output = self.activation(Z)
 
 
+def Activation_ReLU(X):
+  return np.maximum(0, X)
+
+# layers: [ { n: N_NODES, 
+#             activation: ACTIVATION_FUNCTION,
+#           }, ... ]
+# The last layer in layers will be the output layer
+class NeuralNetwork:
+  def __init__(self, n_input, layers, file_path=None):
+    self.n_input = n_input
+    self.layer_schema = layers
+    if file_path:
+      self.load(file_path)
+    else:
+      self.network = []
+      for i,l in enumerate(self.layer_schema):
+        input = self.n_input
+        if i > 0:
+          input = self.network[i-1]["n"]
+        layer = Layer(input, l["n"], activation=l.get("activation"))
+        self.network.append(layer)
+  
+  def forward(self, input):
+    output = input
+    for l in self.network:
+      l.forward(output)
+      output = l.output
+    return output
+
+  def store(self, file_path="data"):
+    store_arrays = []
+    for l in self.network:
+      store_arrays.append(l.weights)
+      store_arrays.append(l.biases)
+    np.savez(file_path, *store_arrays)
+
+  def load(self, file_path="data"):
+    npz = np.load(file_path + ".npz")
+    if len(npz.files) % 2 != 0:
+      print("Loaded values seem to me corrupt")
+    self.network = []
+    for i,l in enumerate(self.layer_schema):
+      input = self.n_input 
+      if i > 0:
+        input = self.network[i-1]["n"]
+      layer = Layer(input, l.get("n"), activation=l.get("activation"), weights=np.array(npz["arr_" + str(i)]), biases=np.array(npz["arr_" + str(i+1)]))
+      self.network.append(layer)
+
+# Test input
+input = [[1,0,0], 
+         [0,1,0],
+         [0,0,1],
+         [0,0,0]]
+
+# n_input=4 and n_output=3 => 4*3 matrix
+weights1 = [[1,1,3], 
+            [2,2,4],
+            [3,3,4]]
+biases1 = [[0,0,0]]
+
+layers = [{"n": 3, "activation": Activation_ReLU}]
+network = NeuralNetwork(3, layers)
+# network.store("data_ai")
+# print(network.forward(input))
