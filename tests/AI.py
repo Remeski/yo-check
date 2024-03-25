@@ -5,13 +5,13 @@ import math
 import random
 from numpy.random import bytes as randombytes
 import AI.Core as AI
-from AI.Activations import Linear, ReLU, Sigmoid
+from AI.Activations import Sigmoid
 
-test_layers = [{"n": 3, "activation": ReLU()}, {"n": 5, "activation": ReLU()}, {"n": 1, "activation": Linear()}]
+test_schema = { "n_input": 3, "layers": [{"n": 3, "activation": "ReLU"}, {"n": 5, "activation": "ReLU"}, {"n": 1, "activation": "Linear"}] }
 
-test_layers_sin = [{"n": 5, "activation": ReLU()}, {"n": 5, "activation": ReLU()}, {"n": 1, "activation": Linear()}]
+test_schema_sin = { "n_input": 1, "layers": [{"n": 5, "activation": "ReLU"}, {"n": 5, "activation": "ReLU"}, {"n": 1, "activation": "Linear"}] }
 
-test_layers_xor = [{"n": 5, "activation": ReLU()}, {"n": 5, "activation": ReLU()}, {"n": 1, "activation": Linear()}]
+test_schema_xor = { "n_input": 2, "layers": [{"n": 5, "activation": "ReLU"}, {"n": 5, "activation": "ReLU"}, {"n": 1, "activation": "Linear"}] }
 
 def batch_xor():
   return ([[0,0], [0,1], [1,0], [1,1]], [[0], [1], [1], [0]])
@@ -47,14 +47,14 @@ class TestAINeuralNetwork(unittest.TestCase):
   def test_with_sin(self, save=False):
     batch_size = 5
     training_iterations = 1000
-    eeta = 0.1
+    eta = 0.1
 
-    layers = test_layers_sin
-    network = AI.NeuralNetwork(1, layers) 
+    schema = test_schema_sin
+    network = AI.NeuralNetwork(schema) 
 
     for _ in range(0, training_iterations):
       batch = batch_sin(batch_size)
-      network.train(batch, eeta)
+      network.train(batch, eta)
 
     loss = network.test_loss(batch_sin(batch_size))
 
@@ -68,8 +68,8 @@ class TestAINeuralNetwork(unittest.TestCase):
 
     eeta = 0.1
 
-    layers = test_layers_xor
-    network = AI.NeuralNetwork(2, layers) 
+    schema = test_schema_xor
+    network = AI.NeuralNetwork(schema) 
 
     for _ in range(0, training_iterations):
       network.train(batch_xor(), eeta)
@@ -82,9 +82,8 @@ class TestAINeuralNetwork(unittest.TestCase):
       network.store("xor_test")
 
 
-    
   def test_forward_prop(self):
-    network = AI.NeuralNetwork(3, test_layers)
+    network = AI.NeuralNetwork(test_schema)
     input = [[1,2,3],[1,2,3],[1,2,3]]
     network.forward(input)
     output = network.output
@@ -92,7 +91,7 @@ class TestAINeuralNetwork(unittest.TestCase):
 
 
   def test_store_and_load(self):
-    network = AI.NeuralNetwork(3, test_layers)
+    network = AI.NeuralNetwork(test_schema)
     try: 
       os.mkdir("/tmp/yo_check/")
     except:
@@ -100,17 +99,19 @@ class TestAINeuralNetwork(unittest.TestCase):
 
     file_name = randombytes(10).hex()
 
-    network.store(file_path=f"/tmp/yo_check/{file_name}")
-    network2 = AI.NeuralNetwork(3, test_layers, file_path=f"/tmp/yo_check/{file_name}")
+    network.store(f"/tmp/yo_check/{file_name}")
+    network2 = AI.NeuralNetwork.load_from_file(f"/tmp/yo_check/{file_name}")
 
     os.remove(f"/tmp/yo_check/{file_name}.npz")
 
-    self.assertEqual(len(network.network), len(network2.network))
-    for l1,l2 in zip(network.network, network2.network):
+    self.assertEqual(len(network.layers), len(network2.layers))
+    for l1,l2 in zip(network.layers, network2.layers):
       for w1,w2 in zip(l1.weights, l2.weights):
         self.assertTrue((w1 == w2).all())
       for b1,b2 in zip(l1.biases, l2.biases):
         self.assertTrue((b1 == b2).all())
+
+    self.assertTrue((network2.run([1,1,1]) == network.run([1,1,1])).all())
 
 class TestAIActivations(unittest.TestCase):
   def test_sigmoid(self):

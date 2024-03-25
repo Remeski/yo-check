@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class ReLU:
   def prime(self, X):
     return (X > 0) * 1
@@ -21,3 +22,8 @@ class Sigmoid:
   def calc(self, X):
     return 1 / (1 + np.exp(-np.array(X)))
 
+name_to_class = {
+  "ReLU": ReLU,
+  "Linear": Linear,
+  "Sigmoid": Sigmoid
+}
