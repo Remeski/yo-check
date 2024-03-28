@@ -48,6 +48,19 @@ question_keywords = {
   "valmistautuminen": ["valmistautunut"]
 }
 
+question_types = {
+  "millainen": {
+    "order": [["helppo"], ["juuri sopiva"], ["melko vaativa"], ["liian vaikea"]]
+  },
+  "fiilis": {
+    "order": [["voittajafiilis"], ["positiivisesti yllättynyt"], ["ihan jees"], ["pettynyt"]]
+  },
+  "arvosanani": {
+      "order": [["l"], ["e"], ["m"], ["c"], ["b"], ["a"], ["i"]]
+  }
+}
+
+
 def find_href_of_a(body: str, search_string: str):
   index = body.rfind(search_string) 
   start_index = 0
@@ -129,7 +142,7 @@ def parse_questions(polls: dict, minimal=False):
   obj = {}
   for q in polls:
     q_name_actual: str = q.strip()
-    q_name = "error"
+    q_name = q_name_actual
     for qk in question_keywords:
       kws = question_keywords[qk]
       for kw in kws:
@@ -137,7 +150,25 @@ def parse_questions(polls: dict, minimal=False):
           q_name = qk 
           break
     if minimal:
-      obj[q_name] = dict((i + 1, v) for (i, v) in enumerate(polls[q].values())) 
+      answers_order = question_types.get(q_name)
+      if answers_order is None:
+        pass
+        # print(f"Something happened at {q}")
+      else:
+        tmp = {}
+        for i,order in enumerate(answers_order["order"]):
+          for kw in order:
+            value = 0
+            for a in polls[q]:
+              if a.lower().__contains__(kw):
+                value = polls[q][a]
+                break
+            # print(f"{value} at {order} with keyword {kw} and polls[q] is {polls[q]}")
+            if value is not None:
+              tmp[i+1] = value
+              continue
+        obj[q_name] = tmp
+        # obj[q_name] = dict((i + 1, v) for (i, v) in enumerate(polls[q].values())) 
     else:
       obj[q_name] = dict((k.lower(), v) for (k, v) in polls[q].items()) 
   return obj
@@ -151,7 +182,7 @@ def calculate_relative_scores(parsed_questions: dict):
     for ans in answers.values():
       sum += ans
     for ans in answers:
-      q_obj[ans] = round(answers[ans]/sum, 3) 
+      q_obj[ans] = round(answers[ans]/sum, 6) 
     obj[q] = q_obj
   return obj
 
