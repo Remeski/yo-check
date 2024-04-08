@@ -3,8 +3,8 @@ import argparse
 
 parser = argparse.ArgumentParser(prog='yo-raja-check', description='Laskea cool things about yo pisterajat!')
 
-parser.add_argument('-v', '--vuodet', help="Format: (VUOSILUKU(K | S),...) , esim. 2024S,2024K", required=True)
-parser.add_argument('-a', '--aine', action="append", required=True)
+parser.add_argument('-v', '--vuodet', help="Format: VUOSILUKU(K | S),..., esim. 2024S,2024K", required=True)
+parser.add_argument('-a', '--aine', help="Format: Lyhenne aineelle, esim. HI, YH, MAA (pitkä matematiikka) jne.", action="append", required=True)
 parser.add_argument('arvosanat', help="Kyl sä tiiät mitä ne on L,E,M jne.")
 
 args = parser.parse_args()
