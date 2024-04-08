@@ -6,6 +6,7 @@ import argparse
 import pickle
 import os
 import fnmatch
+import statistics
 
 vuodet = ["2023S", "2023K", "2022S", "2022K", "2021S", "2021K", "2021S", "2020K"]
 
@@ -31,11 +32,10 @@ def get_learning_example(aine, vuosi, input_only=False, maksimi_pisteet=120):
     d = [*d, *scores[key].values()]
   return (d, rajat)
 
-
 def get_learning_data(aineet, maksimi_pisteet=120):
   data = []
   answers = []
-  means = {}
+  vars = {}
   for aine in aineet:
     sum = {
       "L": 0,
@@ -59,45 +59,41 @@ def get_learning_data(aineet, maksimi_pisteet=120):
     for vuosi in vuodet:
       try:
         d = []
-        # rajat = []
         scores = poll_scores(aine, vuosi, minimal=True)
         for arvosana in arvosanat:
           raja = pisterajat(aine, [vuosi], arvosana)["raw"][vuosi] 
           sum[arvosana] += raja
           rajat[arvosana].append(raja)
-          # rajat.append(round(raja/maksimi_pisteet, 6))
         for key in order:
           d = [*d, *scores[key].values()]
         n += 1
-        # answers.append(rajat)
         data.append(d)
       except Exception as err: 
-        print(f"Something happened at {vuosi}")
-        print("error:")
+        print(f"Error at {aine} {vuosi}")
         print(err)
-        print("data:")
-        print((data, answers))
+        with open(".recovered_data.pcl", 'wb') as f:
+          pickle.dump(data, f)
 
-    _means = {}
+
+    if n == 0:
+      continue
+
+    means = {}
     for arvosana in sum:
-      _means[arvosana] = sum[arvosana] / n
+      means[arvosana] = sum[arvosana] / n
 
-    means[aine] = _means
+    mu = statistics.mean(means.values())
+    sigma = statistics.stdev(means.values())
+
+    vars[aine] = {"mu": mu, "sigma": sigma}
 
     for i in range(0, n):
       a = []
       for arvosana in arvosanat:
-        a.append(round(rajat[arvosana][i] / _means[arvosana], 6))
+        a.append(round((rajat[arvosana][i] - mu)/sigma, 6))
       answers.append(a)
 
-  return data,answers,means
-
-def tmp():
-    rajat = []
-    for arvosana in arvosanat:
-      raja = pisterajat("MAA", ["2019S"], arvosana)["raw"]["2019S"] 
-      rajat.append(round(raja/120, 6))
-    print(rajat)
+  return data,answers,vars
 
 aine_model_dict = {
   "MAA": "MAA-FY-fiilis-millainen.npz",
@@ -112,33 +108,45 @@ output_order = ["L", "E", "M", "C", "B", "A", "i"]
 
 
 def find(pattern, path):
+  results = []
   for root, _, files in os.walk(path):
     for name in files:
       if fnmatch.fnmatch(name, pattern):
-        return os.path.join(root, name)
-  return ""
+        results.append(os.path.join(root, name))
+  return results
 
+def latest(results):
+  if len(results) < 1:
+    return None
+  latest = results[0]
+  for res in results:
+    if int(res.rstrip(".npz")[-3:]) > int(latest.rstrip(".npz")[-3:]):
+      latest = res
+  return latest
 
 def run(aine, vuosi):
-  file_name = find("*" + aine + "*", base_path)
+  file_name = latest(find("*" + aine + "*", base_path))
+
   if file_name is None:
     print("Not yet implemented")
     return
+
+  print(f"Using model {file_name}")
+
   nn = NeuralNetwork.load_from_file(file_name)
 
   input = get_learning_example(aine, vuosi, input_only=True)[0]
 
   prediction = nn.run(input)
 
-  means = {}
-  with open(find("*" + aine + "*", ".cache/"), 'rb') as f:
-    _,_,means = pickle.load(f)
+  vars = {}
+  with open(find("*" + aine + "*", ".cache/")[0], 'rb') as f:
+    _,_,vars = pickle.load(f)
   
   for n,p in zip(output_order, prediction[0]):
-        print(f"{n}: {p*means[aine][n]}")
+        print(f"{n}: {p*vars[aine]['sigma']+vars[aine]['mu']}")
 
-# schema = lambda dataset: {"n_input": len(dataset[0][0]), "layers": [{ "n": 100, "activation": "ReLU" }, { "n": 100, "activation": "Sigmoid" }, {"n": len(dataset[1][0]), "activation": "Sigmoid"}]}
-schema = lambda dataset: {"n_input": len(dataset[0][0]), "layers": [{ "n": 100, "activation": "LeakyReLU" }, { "n": 100, "activation": "LeakyReLU" }, { "n": 100, "activation": "Sigmoid" }, {"n": len(dataset[1][0]), "activation": "Linear"}]}
+schema = lambda dataset: {"n_input": len(dataset[0][0]), "layers": [{ "n": 100, "activation": "LeakyReLU" },{ "n": 50, "activation": "Sigmoid" }, {"n": len(dataset[1][0]), "activation": "Linear"}]}
 
 def train(aineet, file_path):
   data = ()
@@ -166,7 +174,8 @@ def train(aineet, file_path):
 args = parser.parse_args()
 
 if args.komento == "opeta":
-  train(args.aine.split(","), "ai_models/" + args.aine.upper().replace(",", "-") + "-fiilis-millainen")
+  name = latest(find(args.aine.upper().replace(",", "-") + "*", "ai_models/"))
+  train(args.aine.split(","), name if name is not None else base_path + args.aine.upper().replace(",", "-") + "-fiilis-millainen")
 if args.komento == "laske":
   run(args.aine, args.vuosi)
 

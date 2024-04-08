@@ -60,7 +60,6 @@ question_types = {
   }
 }
 
-
 def find_href_of_a(body: str, search_string: str):
   index = body.rfind(search_string) 
   start_index = 0
@@ -153,7 +152,6 @@ def parse_questions(polls: dict, minimal=False):
       answers_order = question_types.get(q_name)
       if answers_order is None:
         pass
-        # print(f"Something happened at {q}")
       else:
         tmp = {}
         for i,order in enumerate(answers_order["order"]):
@@ -163,12 +161,10 @@ def parse_questions(polls: dict, minimal=False):
               if a.lower().__contains__(kw):
                 value = polls[q][a]
                 break
-            # print(f"{value} at {order} with keyword {kw} and polls[q] is {polls[q]}")
             if value is not None:
               tmp[i+1] = value
               continue
         obj[q_name] = tmp
-        # obj[q_name] = dict((i + 1, v) for (i, v) in enumerate(polls[q].values())) 
     else:
       obj[q_name] = dict((k.lower(), v) for (k, v) in polls[q].items()) 
   return obj
