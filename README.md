@@ -6,7 +6,7 @@ The code ain't that clean but it works (hopefully).
 
 ## Features
 
-- Fetches grade scores and displays them neatly.
+- Fetches grade scores (pisterajat) and displays them neatly.
 - Calculate arithmetic mean for grade scores over given years.
 - __Tries__ to predict new grade scores based on Abitreenit surveys. (requires [AIr](https://github.com/Remeski/AIr))
 
